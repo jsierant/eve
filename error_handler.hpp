@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace eva {
+namespace eve {
 
 class excetion_error_handler {
 public:

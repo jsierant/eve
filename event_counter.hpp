@@ -1,4 +1,4 @@
-// eva
+// eve
 
 #pragma once
 #include <sys/eventfd.h>
@@ -8,7 +8,7 @@
 #include "native_handle.hpp"
 #include "error_handler.hpp"
 
-namespace eva {
+namespace eve {
 
 template <typename error_policy = excetion_error_handler>
 class event_counter {
