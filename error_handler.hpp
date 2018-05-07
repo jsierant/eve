@@ -12,6 +12,10 @@ public:
     throw std::runtime_error(std::string("System error, call: ")
       + sys_call_name + ",  msg: \'" + sys::to_string(err) + "\'");
   }
+
+  void error(char const * msg) {
+    throw std::runtime_error(msg);
+  }
 };
 
 }

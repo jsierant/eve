@@ -26,7 +26,7 @@ public:
   using value_type = std::uint64_t;
   static value_type const default_init_value = 0;
 
-  explicit event_counter(value_type init_value = default_init_value, 
+  explicit event_counter(value_type init_value = default_init_value,
       property init_properties = default_properties)
     : handle(::eventfd(init_value, init_properties)) {
     if(handle == invalid_handle) {

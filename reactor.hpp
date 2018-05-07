@@ -17,8 +17,18 @@ class reactor {
   static int const flags = 0;
   static int const wait_indefinitely = -1;
 public:
-  enum class event_type { read, write };
-  using handler = std::function<void()>;
+  enum class event_type: int {
+    read = EPOLLIN,
+    write = EPOLLOUT,
+    hungup = EPOLLHUP,
+    connection_closed = EPOLLRDHUP,
+    error = EPOLLERR
+  };
+  friend event_type operator|(event_type l, event_type r) {
+    return static_cast<event_type>(static_cast<int>(l)|static_cast<int>(r));
+  }
+
+  using handler = std::function<void(native_handle_t, event_type)>;
 
   reactor()
     : epollhandle(::epoll_create1(flags)),
@@ -29,7 +39,14 @@ public:
     }
 
     handlers[ctrlevent.native_handle()] =
-      [this] () { stopped = true; ctrlevent.val(); };
+      [this] (auto, event_type type) {
+        stopped = true;
+        if(type == event_type::hangup || type == event_type::error) {
+          error.error("Reactor: unable to stop. Ctl event error.");
+          return;
+        }
+        ctrlevent.val();
+      };
     addEpollEvent(ctrlevent.native_handle(), event_type::read);
   }
 
@@ -58,12 +75,12 @@ public:
     while(!stopped) {
       auto ready_events = ::epoll_wait(epollhandle, events.data(),
                                        events.size(), wait_indefinitely);
-      if (ready_events == -1) {
+      if (ready_events < 0) {
+        error.sys_error(sys::error(errno), "epoll_wait");
       }
-//       for(auto const& event:
-//           make_array_view(events.data(), ready_events)) {
-//           handle(event.data.fd);
-//       }
+      for(std::size_t i = 0; i < static_cast<std::size_t>(ready_events); ++i) {
+        handle(events[i].data.fd, static_cast<event_type>(events[i].events));
+      }
     }
   }
 
@@ -72,7 +89,7 @@ public:
   }
 
 private:
-  void handle(native_handle_t handle) {
+  void handle(native_handle_t handle, event_type) {
     auto handlerIt = handlers.find(handle);
     if (handlerIt == std::end(handlers)) {
     }
