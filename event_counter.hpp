@@ -58,7 +58,7 @@ public:
     return 0;
   }
 
-  auto native_handle() { return handle; }
+  auto native_handle() const { return handle; }
 
 private:
   error_policy error;
