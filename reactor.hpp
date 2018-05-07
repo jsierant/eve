@@ -4,6 +4,7 @@
 #include "native_handle.hpp"
 #include "event_counter.hpp"
 #include "sys.hpp"
+#include "flags.hpp"
 
 #include <sys/epoll.h>
 
@@ -14,7 +15,7 @@ namespace eve {
 
 template <typename error_policy = excetion_error_handler>
 class reactor {
-  static int const flags = 0;
+  static int const simple_mode = 0;
   static int const wait_indefinitely = -1;
 public:
   enum class event_type: int {
@@ -28,10 +29,10 @@ public:
     return static_cast<event_type>(static_cast<int>(l)|static_cast<int>(r));
   }
 
-  using handler = std::function<void(native_handle_t, event_type)>;
+  using handler = std::function<void(native_handle_t, flags<event_type>)>;
 
   reactor()
-    : epollhandle(::epoll_create1(flags)),
+    : epollhandle(::epoll_create1(simple_mode)),
       event(), events() {
 
     if(epollhandle == invalid_handle) {
@@ -39,9 +40,9 @@ public:
     }
 
     handlers[ctrlevent.native_handle()] =
-      [this] (auto, event_type type) {
+      [this] (auto, flags<event_type> type) {
         stopped = true;
-        if(type == event_type::hangup || type == event_type::error) {
+        if(type.any_of(event_type::hangup, event_type::error)) {
           error.error("Reactor: unable to stop. Ctl event error.");
           return;
         }
