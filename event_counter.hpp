@@ -12,20 +12,23 @@ namespace eve {
 
 template <typename error_policy = excetion_error_handler>
 class event_counter {
-  enum flag: int {
+public:
+  enum class property: int {
     non_blocking = EFD_NONBLOCK,
     semaphore = EFD_SEMAPHORE
   };
+  friend property operator|(property l, property r) {
+    return static_cast<property>(static_cast<int>(l)|static_cast<int>(r));
+  }
 
-  static auto const default_flags = non_blocking;
+  static auto const default_properties = property::non_blocking;
 
-public:
   using value_type = std::uint64_t;
   static value_type const default_init_value = 0;
 
   explicit event_counter(value_type init_value = default_init_value, 
-      int init_flags = default_flags)
-    : handle(::eventfd(init_value, init_flags)) {
+      property init_properties = default_properties)
+    : handle(::eventfd(init_value, init_properties)) {
     if(handle == invalid_handle) {
       error.sys_error(sys::error(errno), "eventfd::create");
     }
