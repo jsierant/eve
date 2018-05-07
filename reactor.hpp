@@ -80,7 +80,7 @@ public:
         error.sys_error(sys::error(errno), "epoll_wait");
       }
       for(std::size_t i = 0; i < static_cast<std::size_t>(ready_events); ++i) {
-        handle(events[i].data.fd, static_cast<event_type>(events[i].events));
+        handle(events[i].data.fd, make_flags<event_type>(events[i].events));
       }
     }
   }
@@ -103,15 +103,8 @@ private:
     handlers.erase(handle);
   }
 
-  int convert_type(event_type t) {
-    if(t == event_type::read) {
-      return EPOLLIN;
-    }
-    return EPOLLOUT;
-  }
-
-  void add_epoll_event(native_handle_t handle, event_type type) {
-    event.events = convert_type(type) | EPOLLRDHUP;
+  void add_epoll_event(native_handle_t handle, flags<event_type> type) {
+    event.events = *type;
     event.data.fd = handle;
     if(::epoll_ctl(epollhandle, EPOLL_CTL_ADD, event.data.fd, &event) == -1) {
     }
